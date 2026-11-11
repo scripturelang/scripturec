@@ -37,4 +37,3 @@ jobs:
       - run: cargo web
       - run: cargo build --locked
       - run: node scripts/test-web.mjs
-      - run: node scripts/test-playground.mjs

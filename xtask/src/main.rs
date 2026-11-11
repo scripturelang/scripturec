@@ -20,7 +20,7 @@ fn run() -> Result<()> {
     let args: Vec<_> = env::args().skip(1).collect();
     if args == ["web", "--help"] || args == ["web", "-h"] {
         println!(
-            "Usage: cargo web [--offline]\nBuild browser bindings and example assets in web/pkg/."
+            "Usage: cargo web [--offline]\nBuild the WebAssembly library and browser bindings in pkg/."
         );
         return Ok(());
     }
@@ -33,7 +33,7 @@ fn run() -> Result<()> {
     env::set_current_dir(root)?;
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let target = root.join("target");
-    let package = root.join("web/pkg");
+    let package = root.join("pkg");
 
     // Read the exact binding version from Cargo rather than maintaining a second pin.
     let metadata = Command::new(&cargo)
@@ -116,18 +116,7 @@ fn run() -> Result<()> {
             .arg(&package),
     )?;
     fs::write(package.join("package.json"), "{\"type\":\"module\"}\n")?;
-    fs::create_dir_all(package.join("examples"))?;
-    for name in [
-        "example01.scripture",
-        "example08.scripture",
-        "example02.scripture",
-    ] {
-        fs::copy(
-            root.join("examples").join(name),
-            package.join("examples").join(name),
-        )?;
-    }
-    println!("Built web/pkg/. Serve web/ with a static HTTP server to open the playground.");
+    println!("Built pkg/. Copy this directory into the website repository when ready.");
     Ok(())
 }
 

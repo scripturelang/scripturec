@@ -131,69 +131,36 @@ These print the interpreter's version and
 `Scripture brought to you by jcjimenez`. They also work directly in the REPL and
 in the browser. Both are reserved and cannot be reassigned or shadowed.
 
-## Browser playground
+## WebAssembly runtime
 
-Build the browser runtime with Rust:
+The static website and browser playground live in
+[scripturelang/www](https://github.com/scripturelang/www). This repository builds
+its runtime independently:
 
 ```sh
 rustup target add wasm32-unknown-unknown # one-time setup
 cargo web
 ```
 
-`cargo web` builds the release Wasm library, runs the matching `wasm-bindgen` CLI,
-and copies the playground examples into `web/pkg/`. It uses a compatible CLI from
-`PATH` or installs one locally under `target/tools`. Once dependencies and tools
-are cached, use `cargo web --offline`.
+`cargo web` builds the release Wasm library and runs the matching `wasm-bindgen`
+CLI. The standalone `pkg/` bundle contains `scripturec_bg.wasm`, its JavaScript
+loader, helper snippets, TypeScript declarations, and an ES module `package.json`.
+It uses a compatible CLI from `PATH` or installs one locally under `target/tools`.
+Once dependencies and tools are cached, use `cargo web --offline`.
 
-Serve `web/` with a static HTTP server. For example, with
-[miniserve](https://github.com/svenstaro/miniserve):
+Generated files under `pkg/` and `target/` are ignored by Git. Building the runtime
+does not change or deploy the website. When a runtime is ready, copy the complete
+bundle into the website checkout (assuming the repositories are siblings):
 
 ```sh
-cargo install miniserve --locked # one-time, or use your existing static server
-miniserve web --index index.html --port 8080
+mkdir -p ../www/web/pkg
+cp -R pkg/. ../www/web/pkg/
 ```
 
-Open [localhost:8080](http://localhost:8080). Opening `index.html` directly with
-`file://` is not supported. To deploy, upload the contents of `web/`, including the
-generated `pkg/` directory, to a static host.
-
-HTML, CSS, and JavaScript changes only need a browser refresh. Re-run `cargo web`
-after changing Rust code or examples. Generated files under `web/pkg/` and
-`target/` are ignored by Git.
-
-### Cloudflare hosting
-
-The `scripturec` Worker serves `web/` as static assets. Workers Builds connects
-directly to this repository and builds and deploys pushes to `main`:
-
-- Root directory: repository root
-- Build command: `npm run build`
-- Deploy command: `npm run deploy`
-- Preview builds: disabled
-
-Cloudflare installs the pinned Node dependencies from `package-lock.json`.
-The build script installs Rust 1.96.0 and its WebAssembly target, runs `cargo web`,
-then packages the static assets with `cf build`. Deployment uses `cf deploy
---prebuilt`, so it publishes exactly that build. `cloudflare.config.ts` selects
-the Worker and personal Cloudflare account; `wrangler.config.ts` supplies the
-static asset directory to the build tool. No deployment runs in GitHub Actions.
-
-To validate locally, run `npm ci`, `npm run build`, and
-`npx cf deploy --prebuilt --dry-run`. Deployments require Cloudflare authentication;
-credentials belong in Cloudflare's build settings, never in this repository.
-
-Each run gets a fresh interpreter in a module worker. Stop terminates that worker.
-Four guided examples in `web/lessons.js` introduce printing, variables, functions,
-and prophecies, with a small experiment and expected output for each. A syntax
-guide stays available below the workspace. On phones, Code and Output switch
-views and Run stays at the bottom of the screen.
-
-The page saves a separate local draft for each example and a personal workspace
-when browser storage is available. Example changes and resets can be undone,
-including after a reload. Existing drafts migrate to the personal workspace.
-Runtime errors include output produced before the error, a readable diagnostic,
-and a link to the source line; stopping a run discards its buffered output. Use
-Ctrl/⌘ + Enter to run. Tab indents; Esc followed by Tab leaves the editor.
+Review and commit `www/web/pkg/` with the website changes. The JavaScript loader
+and Wasm binary must be updated together. The website uses this checked-in copy
+and needs no Rust toolchain to build or deploy. See its README for local serving
+and hosting instructions.
 
 The bindings are also reusable from other static pages:
 
@@ -206,9 +173,9 @@ The bindings are also reusable from other static pages:
 </script>
 ```
 
-`run_script(source)` returns a Promise resolving to JSON containing `output` (an array of printed lines)
-and `error` (a diagnostic string or `null`). The playground calls it inside
-`web/worker.js` to keep the page responsive during execution.
+`run_script(source)` returns a Promise resolving to JSON containing `output`
+(an array of printed lines) and `error` (a diagnostic string or `null`). The
+playground runs it inside a module worker to keep the page responsive.
 
 ## Language status
 
@@ -236,13 +203,11 @@ cargo fmt --all --check
 cargo web
 cargo build --locked
 node scripts/test-web.mjs
-node scripts/test-playground.mjs
 ```
 
 The Node checks require Node.js 22+. `test-web.mjs` compares native and Wasm
-results and executes every guided lesson; `test-playground.mjs` checks draft
-recovery, lesson navigation, mobile views, keyboard handling, diagnostics, and the
-worker lifecycle with a simulated DOM. Rust tests cover parsing, execution, the CLI, and resource limits.
+results, errors, limits, and asynchronous execution. Website lesson and UI checks
+live in `www`. Rust tests cover parsing, execution, the CLI, and resource limits.
 
 [CI](./.github/workflows/security.yml) runs tests and dependency audits on pushes,
 pull requests, and a weekly schedule. Dependabot checks Cargo dependencies and
