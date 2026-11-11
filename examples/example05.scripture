@@ -1,0 +1,13 @@
+genesis:
+  praise "Multiplication takes precedence: 14"
+  praise 2 + 3 * 4
+
+  praise "Parentheses change the grouping: 20"
+  praise (2 + 3) * 4
+
+  praise "Subtraction associates left to right: 5"
+  praise 10 - 3 - 2
+
+  praise "Parentheses change the subtraction: 9"
+  praise 10 - (3 - 2)
+amen

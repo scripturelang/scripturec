@@ -1,0 +1,20 @@
+let there be value = 5
+make it so that ready = vero
+
+genesis:
+  praise "Unary plus preserves the value: 5"
+  praise +value
+
+  praise "Unary minus negates the value: -5"
+  praise -value
+
+  praise "Negation binds before multiplication: -10"
+  praise -value * 2
+
+  praise "Both logical negation spellings produce false"
+  praise !ready
+  praise not ready
+
+  praise "Nested logical negation produces true"
+  praise not not ready
+amen

@@ -1,0 +1,18 @@
+commandment sum(
+    left,
+    right
+):
+    rejoice left + right
+amen
+
+genesis:
+    praise "Two statements on one line"; praise "Separated by a semicolon"
+
+    praise sum(
+        1,
+        (
+            2 +
+            3
+        )
+    )
+amen

@@ -1,0 +1,9 @@
+commandment pause(seconds):
+    pray seconds
+amen
+
+genesis:
+    praise "Before prayer"
+    preach pause(0.01)
+    praise "After prayer"
+amen

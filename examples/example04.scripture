@@ -1,0 +1,8 @@
+let there be x = 1
+let there be y = 2
+
+genesis:
+  if x < 0:
+    confess "Something is wrong"
+  amen
+amen

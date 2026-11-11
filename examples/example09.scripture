@@ -1,0 +1,18 @@
+commandment observed(value):
+  praise "Right operand evaluated"
+  rejoice value
+amen
+
+genesis:
+  praise "Skip the right operand and produce false"
+  praise false and observed(true)
+
+  praise "Skip the right operand and produce true"
+  praise true or observed(false)
+
+  praise "Evaluate the right operand and produce true"
+  praise true and observed(true)
+
+  praise "Evaluate the right operand and produce false"
+  praise false or observed(false)
+amen

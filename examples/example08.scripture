@@ -1,0 +1,16 @@
+commandment report(value):
+  praise value
+  rejoice value
+amen
+
+commandment combine(left, right):
+  rejoice left + right
+amen
+
+genesis:
+  praise "Operands print 1, 2, 3 in order, then the result is 7"
+  praise report(1) + report(2) * report(3)
+
+  praise "Arguments print 4, 5 in order, then the result is 9"
+  praise combine(report(4), report(5))
+amen

@@ -1,0 +1,25 @@
+make it so that minimum = 1
+make it so that maximum = 10
+
+let there be value = 5
+let there be notable = true
+
+genesis:
+  if minimum < value and value < maximum:
+    praise "The value is strictly between the bounds"
+  amen
+
+  if value not equal minimum and value != maximum:
+    praise "Both inequality spellings work"
+  amen
+
+  if not (value == minimum) and notable:
+    praise "Negate a comparison; notable is an identifier"
+  amen
+
+  praise "and binds more tightly than or: true"
+  praise true or false and false
+
+  praise "Parentheses change the boolean grouping: false"
+  praise (true or false) and false
+amen

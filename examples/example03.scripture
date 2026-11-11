@@ -1,0 +1,7 @@
+commandment increment(x):
+  rejoice x + 1
+amen
+
+genesis:
+  preach increment(1)
+amen

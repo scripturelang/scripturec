@@ -1,0 +1,211 @@
+// The executable Scripture grammar. See SEMANTICS.md for semantic rules and
+// intentionally unresolved features. Newlines inside parentheses are removed
+// by the lexer; all other newlines and semicolons become separator tokens.
+
+use crate::ast::{self, BinaryOperator as B, DeclarationKind as D, ExprKind as E,
+                 StatementKind as S, UnaryOperator as U};
+use crate::lexer::{LexError, Token};
+
+grammar<'input>;
+
+pub Program: ast::Program = {
+    <declarations:Sequence<Declaration>> => ast::Program { declarations },
+};
+
+pub Repl: Vec<ast::ReplItem> = Sequence<ReplItem>;
+
+ReplItem: ast::ReplItem = {
+    <Declaration> => ast::ReplItem::Declaration(<>),
+    <start:@L> <value:NonBindingStatement> <end:@R>
+        => ast::ReplItem::Statement(ast::Spanned { span: start..end, value }),
+};
+
+// Separators are required between items, but optional around the sequence.
+// The final item may end directly at `amen` or EOF. Empty input is a no-op.
+Sequence<T>: Vec<T> = {
+    "separator"* <mut items:(<T> "separator"+)*> <last:T?> => {
+        items.extend(last);
+        items
+    },
+};
+
+Declaration: ast::Declaration = {
+    <start:@L> <value:DeclarationKind> <end:@R> => ast::Spanned { span: start..end, value },
+};
+
+DeclarationKind: ast::DeclarationKind = {
+    BindingKind,
+    "genesis" <Block> => D::Genesis(<>),
+    "commandment" <name:Identifier> "(" <parameters:CommaList<Identifier>?> ")" <body:Block>
+        => D::Commandment { name, parameters: parameters.unwrap_or_default(), body },
+    "prophecy" <condition:Expression> <body:Block> => D::Prophecy { condition, body },
+};
+
+BindingKind: ast::DeclarationKind = {
+    "let there be" <names:CommaList<Identifier>> <initializer:("=" <Expression>)?>
+        => D::Variable { names, initializer },
+    "make it so that" <names:CommaList<Identifier>> <initializer:("=" <Expression>)?>
+        => D::Constant { names, initializer },
+};
+
+Block: ast::Block = ":" <Sequence<Statement>> "amen";
+
+Statement: ast::Statement = {
+    <start:@L> <value:StatementKind> <end:@R> => ast::Spanned { span: start..end, value },
+};
+
+StatementKind: ast::StatementKind = {
+    <start:@L> <value:BindingKind> <end:@R>
+        => S::Declaration(ast::Spanned { span: start..end, value }),
+    NonBindingStatement,
+};
+
+NonBindingStatement: ast::StatementKind = {
+    <Expression> => S::Expression(<>),
+    <targets:(<Identifier> "=")+> <value:Expression> => S::Assignment { targets, value },
+    "rejoice" <Expression> => S::Return(<>),
+    "confess" <Expression> => S::Throw(<>),
+    "if" <condition:Expression> <body:Block> => S::Conditional { condition, body },
+    "preach" <Call> => S::Preach(<>),
+    "pray" <Expression> => S::Pray(<>),
+    "praise" <Expression> => S::Praise(<>),
+};
+
+// Lists do not accept trailing commas. Calls and parameter lists may be empty.
+CommaList<T>: Vec<T> = {
+    <first:T> <rest:("," <T>)*> => {
+        let mut items = vec![first];
+        items.extend(rest);
+        items
+    },
+};
+
+Identifier: String = <name:"identifier"> => name.to_owned();
+
+Expression: ast::Expr = Or;
+
+Or: ast::Expr = {
+    <left:Or> "or" <right:And> =>? ast::Expr::binary(left, B::Or, right).bounded(),
+    And,
+};
+
+And: ast::Expr = {
+    <left:And> "and" <right:Comparison> =>? ast::Expr::binary(left, B::And, right).bounded(),
+    Comparison,
+};
+
+// A single comparison tier rejects every unparenthesized chain, including
+// mixed equality/relational chains. Explicitly grouped comparisons still work.
+Comparison: ast::Expr = {
+    <left:Additive> <operator:ComparisonOperator> <right:Additive>
+        =>? ast::Expr::binary(left, operator, right).bounded(),
+    Additive,
+};
+
+ComparisonOperator: ast::BinaryOperator = {
+    "==" => B::Equal,
+    "!=" => B::NotEqual,
+    "<" => B::Less,
+    ">" => B::Greater,
+};
+
+Additive: ast::Expr = {
+    <left:Additive> <operator:AdditiveOperator> <right:Multiplicative>
+        =>? ast::Expr::binary(left, operator, right).bounded(),
+    Multiplicative,
+};
+
+AdditiveOperator: ast::BinaryOperator = {
+    "+" => B::Add,
+    "-" => B::Subtract,
+};
+
+Multiplicative: ast::Expr = {
+    <left:Multiplicative> <operator:MultiplicativeOperator> <right:Unary>
+        =>? ast::Expr::binary(left, operator, right).bounded(),
+    Unary,
+};
+
+MultiplicativeOperator: ast::BinaryOperator = {
+    "*" => B::Multiply,
+    "/" => B::Divide,
+};
+
+Unary: ast::Expr = {
+    <start:@L> <operator:UnaryOperator> <operand:Unary> <end:@R> =>? ast::Spanned {
+        span: start..end,
+        value: E::Unary { operator, operand: Box::new(operand) },
+    }.bounded(),
+    Primary,
+};
+
+UnaryOperator: ast::UnaryOperator = {
+    "+" => U::Positive,
+    "-" => U::Negative,
+    "!" => U::Not,
+};
+
+Primary: ast::Expr = {
+    <start:@L> <value:PrimaryKind> <end:@R> =>? ast::Spanned { span: start..end, value }.bounded(),
+    Call,
+};
+
+PrimaryKind: ast::ExprKind = {
+    <value:"number"> => E::Number(value.to_owned()),
+    <value:"string"> => E::String(value.to_owned()),
+    <value:"boolean"> => E::Boolean(value),
+    "_scripture_version_" => E::String(crate::VERSION.to_owned()),
+    "_scripture_credits_" => E::String(crate::CREDITS.to_owned()),
+    <Identifier> => E::Identifier(<>),
+    "(" <Expression> ")" => E::Grouped(Box::new(<>)),
+};
+
+Call: ast::Expr = {
+    <start:@L> <name:Identifier> "(" <arguments:CommaList<Expression>?> ")" <end:@R>
+        =>? ast::Spanned { span: start..end, value: E::Call { name, arguments: arguments.unwrap_or_default() } }.bounded(),
+};
+
+extern {
+    type Location = usize;
+    type Error = LexError;
+
+    enum Token<'input> {
+        "genesis" => Token::Genesis,
+        "commandment" => Token::Commandment,
+        "rejoice" => Token::Rejoice,
+        "preach" => Token::Preach,
+        "prophecy" => Token::Prophecy,
+        "amen" => Token::Amen,
+        "pray" => Token::Pray,
+        "praise" => Token::Praise,
+        "sin" => Token::Sin,
+        "confess" => Token::Confess,
+        "absolve" => Token::Absolve,
+        "if" => Token::If,
+        "_scripture_version_" => Token::ScriptureVersion,
+        "_scripture_credits_" => Token::ScriptureCredits,
+        "let there be" => Token::LetThereBe,
+        "make it so that" => Token::MakeItSoThat,
+        "boolean" => Token::Boolean(<bool>),
+        "identifier" => Token::Identifier(<&'input str>),
+        "number" => Token::Number(<&'input str>),
+        "string" => Token::String(<&'input str>),
+        ":" => Token::Colon,
+        "(" => Token::LeftParen,
+        ")" => Token::RightParen,
+        "," => Token::Comma,
+        "separator" => Token::Separator,
+        "=" => Token::Assign,
+        "+" => Token::Plus,
+        "-" => Token::Minus,
+        "*" => Token::Star,
+        "/" => Token::Slash,
+        "==" => Token::Equal,
+        "!=" => Token::NotEqual,
+        "<" => Token::Less,
+        ">" => Token::Greater,
+        "and" => Token::And,
+        "or" => Token::Or,
+        "!" => Token::Not,
+    }
+}

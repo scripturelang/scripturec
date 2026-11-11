@@ -1,0 +1,12 @@
+let there be x = 1
+make it so that y = 2
+
+prophecy (x == y):
+  praise("It finally happened!")
+amen
+
+genesis:
+  x = 0
+  x = x + 1
+  x = x + 1
+amen

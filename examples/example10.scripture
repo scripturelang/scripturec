@@ -1,0 +1,24 @@
+let there be first = 0
+let there be second = 0
+let there be third = 0
+
+commandment produce(value):
+  praise "The assignment value is produced once"
+  rejoice value
+amen
+
+commandment announce(message):
+  praise message
+amen
+
+genesis:
+  first = second = third = produce(7)
+
+  praise "All three variables now contain 7"
+  praise first
+  praise second
+  praise third
+
+  praise "The following call prints its message, then returns false"
+  praise announce("This function finishes without rejoice")
+amen
