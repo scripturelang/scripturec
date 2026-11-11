@@ -161,6 +161,27 @@ HTML, CSS, and JavaScript changes only need a browser refresh. Re-run `cargo web
 after changing Rust code or examples. Generated files under `web/pkg/` and
 `target/` are ignored by Git.
 
+### Cloudflare hosting
+
+The `scripturec` Worker serves `web/` as static assets. Workers Builds connects
+directly to this repository and builds and deploys pushes to `main`:
+
+- Root directory: repository root
+- Build command: `npm run build`
+- Deploy command: `npm run deploy`
+- Preview builds: disabled
+
+Cloudflare installs the pinned Node dependencies from `package-lock.json`.
+The build script installs Rust 1.96.0 and its WebAssembly target, runs `cargo web`,
+then packages the static assets with `cf build`. Deployment uses `cf deploy
+--prebuilt`, so it publishes exactly that build. `cloudflare.config.ts` selects
+the Worker and personal Cloudflare account; `wrangler.config.ts` supplies the
+static asset directory to the build tool. No deployment runs in GitHub Actions.
+
+To validate locally, run `npm ci`, `npm run build`, and
+`npx cf deploy --prebuilt --dry-run`. Deployments require Cloudflare authentication;
+credentials belong in Cloudflare's build settings, never in this repository.
+
 Each run gets a fresh interpreter in a module worker. Stop terminates that worker.
 The page saves a local draft when browser storage is available. Runtime errors
 include output produced before the error; stopping a run discards its buffered

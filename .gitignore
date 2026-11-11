@@ -1,6 +1,9 @@
 /target
 /web/dist/
 /web/pkg/
+/node_modules/
+/.cloudflare/
+/.wrangler/
 
 # Local credentials and machine-specific files.
 .env
