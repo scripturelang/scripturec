@@ -4,10 +4,17 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { initSync, run_script } from '../web/pkg/scripturec.js';
+import { lessons } from '../web/lessons.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const binary = `${root}target/debug/scripturec${process.platform === 'win32' ? '.exe' : ''}`;
 initSync({ module: readFileSync(new URL('../web/pkg/scripturec_bg.wasm', import.meta.url)) });
+// Lesson copy and expected output must agree with the real interpreter.
+for (const [name, lesson] of Object.entries(lessons)) {
+  const report = JSON.parse(await run_script(lesson.source));
+  assert.equal(report.error, null, `${name}: ${report.error}`);
+  if (lesson.output) assert.deepEqual(report.output, lesson.output, name);
+}
 let count = 0;
 for (const name of readdirSync(`${root}examples`).filter(name => name.endsWith('.scripture'))) {
   const path = `${root}examples/${name}`;

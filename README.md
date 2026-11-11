@@ -183,9 +183,17 @@ To validate locally, run `npm ci`, `npm run build`, and
 credentials belong in Cloudflare's build settings, never in this repository.
 
 Each run gets a fresh interpreter in a module worker. Stop terminates that worker.
-The page saves a local draft when browser storage is available. Runtime errors
-include output produced before the error; stopping a run discards its buffered
-output. Use Ctrl/⌘ + Enter to run.
+Four guided examples in `web/lessons.js` introduce printing, variables, functions,
+and prophecies, with a small experiment and expected output for each. A syntax
+guide stays available below the workspace. On phones, Code and Output switch
+views and Run stays at the bottom of the screen.
+
+The page saves a separate local draft for each example and a personal workspace
+when browser storage is available. Example changes and resets can be undone,
+including after a reload. Existing drafts migrate to the personal workspace.
+Runtime errors include output produced before the error, a readable diagnostic,
+and a link to the source line; stopping a run discards its buffered output. Use
+Ctrl/⌘ + Enter to run. Tab indents; Esc followed by Tab leaves the editor.
 
 The bindings are also reusable from other static pages:
 
@@ -232,8 +240,9 @@ node scripts/test-playground.mjs
 ```
 
 The Node checks require Node.js 22+. `test-web.mjs` compares native and Wasm
-results; `test-playground.mjs` checks the UI's worker lifecycle with a simulated
-DOM. Rust tests cover parsing, execution, the CLI, and resource limits.
+results and executes every guided lesson; `test-playground.mjs` checks draft
+recovery, lesson navigation, mobile views, keyboard handling, diagnostics, and the
+worker lifecycle with a simulated DOM. Rust tests cover parsing, execution, the CLI, and resource limits.
 
 [CI](./.github/workflows/security.yml) runs tests and dependency audits on pushes,
 pull requests, and a weekly schedule. Dependabot checks Cargo dependencies and
