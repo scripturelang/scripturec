@@ -408,6 +408,41 @@ fn unspecified_constructs_are_not_silently_added() {
 }
 
 #[test]
+fn time_constructors_are_expressions_with_required_parentheses() {
+    assert!(matches!(expression("time of our lord()").value, E::Time(args) if args.is_empty()));
+    assert!(matches!(expression("time of our lord(\n stamp()\n)").value,
+        E::Time(args) if matches!(&args[0].value, E::Call { name, .. } if name == "stamp")));
+    binary(
+        &expression("time of our lord() - time of our lord()"),
+        B::Subtract,
+    );
+    parse_repl("let there be time = 1; time + 1").unwrap();
+    for source in [
+        "time of our lord",
+        "time of our lord(1,)",
+        "time  of our lord()",
+        "time\tof our lord()",
+        "time of\nour lord()",
+        "time of our lords()",
+        "let there be time of our lord = 1",
+        "commandment time of our lord(): amen",
+    ] {
+        assert!(parse_repl(source).is_err(), "accepted {source:?}");
+    }
+    let nested = format!(
+        "{}\"2026-12-25T00:00:00Z\"{}",
+        "time of our lord(".repeat(70),
+        ")".repeat(70)
+    );
+    assert!(
+        parse_repl(&nested)
+            .unwrap_err()
+            .to_string()
+            .contains("expression nesting limit")
+    );
+}
+
+#[test]
 fn lexer_tracks_nested_parentheses_without_swallowing_semicolons() {
     let tokens: Vec<_> = Lexer::new("(\n(1\n)\n;2\n)\n3")
         .map(|token| token.unwrap().1)

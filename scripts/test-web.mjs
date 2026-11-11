@@ -24,6 +24,14 @@ for (const [source, message] of [
   ['genesis: pray 18446744073709551616 amen', 'supported duration range'],
   ['genesis: pray "1" amen', 'expected a number'],
   ['genesis: pray true amen', 'expected a number'],
+  ['genesis: praise time of our lord("2026-02-29T00:00:00Z") amen', 'valid RFC 3339'],
+  ['genesis: praise time of our lord("2026-12-25T00:00:00") amen', 'timezone'],
+  ['genesis: praise time of our lord("2016-12-31T23:59:60Z") amen', 'leap seconds'],
+  ['genesis: praise time of our lord("9999-12-31T23:59:59-01:00") amen', 'UTC year range'],
+  ['genesis: praise time of our lord("2026-12-25T00:00:00.1234567890Z") amen', '9 fractional'],
+  ['genesis: praise time of our lord(true) amen', 'timestamp string'],
+  ['genesis: praise time of our lord(1, 2) amen', '0 or 1 arguments'],
+  ['genesis: praise time of our lord() + 1 amen', 'expected a number'],
   ['genesis: praise "before"; confess "oops" amen', 'uncaught sin: oops'],
   ['commandment recurse(): rejoice recurse() amen\ngenesis: recurse() amen', 'call depth limit'],
   ['let there be x = 0\nprophecy x == 1: x = 2 amen\nprophecy x == 2: x = 1 amen\ngenesis: x = 1 amen', 'execution limit'],
@@ -40,6 +48,40 @@ for (const [source, message] of [
 }
 const partial = JSON.parse(await run_script('genesis: praise "before"; confess "oops" amen'));
 assert.deepEqual(partial.output, ['before']);
+// Fixed timestamps must keep full precision in Wasm, independently of Date.now().
+const times = JSON.parse(await run_script(`
+let there be first = time of our lord("2026-12-25T00:00:00.000000001Z")
+let there be same = time of our lord("2026-12-24T18:00:00.000000001-06:00")
+let there be later = time of our lord("2026-12-25T00:00:00.000000002Z")
+genesis:
+    praise same
+    praise first == same
+    praise first < later
+    praise later > first
+    praise later - first
+    praise first - later
+    praise first - same
+amen`));
+assert.equal(times.error, null);
+assert.deepEqual(times.output, ['2026-12-25T00:00:00.000000001Z', 'true', 'true', 'true', '0.000000001', '-0.000000001', '0']);
+const clockBefore = Date.now();
+const clock = JSON.parse(await run_script('genesis: praise time of our lord() amen'));
+const clockAfter = Date.now();
+assert.equal(clock.error, null);
+const captured = Date.parse(clock.output[0]);
+assert.ok(captured >= clockBefore && captured <= clockAfter, JSON.stringify(clock));
+// Deterministic host clock verifies exact millisecond conversion, including before the epoch.
+const originalNow = Date.now;
+try {
+  for (const [milliseconds, expected] of [[-1, '1969-12-31T23:59:59.999Z'], [1798156800123, '2026-12-25T00:00:00.123Z']]) {
+    Date.now = () => milliseconds;
+    const report = JSON.parse(await run_script('genesis: praise time of our lord() amen'));
+    assert.equal(report.error, null);
+    assert.deepEqual(report.output, [expected]);
+  }
+} finally {
+  Date.now = originalNow;
+}
 // A positive delay yields to the host event loop and resumes nested execution.
 let timerFired = false;
 const started = performance.now();

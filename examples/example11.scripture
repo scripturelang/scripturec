@@ -1,18 +1,12 @@
-commandment sum(
-    left,
-    right
-):
-    rejoice left + right
-amen
-
 genesis:
-    praise "Two statements on one line"; praise "Separated by a semicolon"
+    let there be vigil = time of our lord("2026-12-24T23:00:00Z")
+    let there be christmas = time of our lord("2026-12-25T00:00:00Z")
 
-    praise sum(
-        1,
-        (
-            2 +
-            3
-        )
-    )
+    if vigil < christmas:
+        praise "The hour has not yet come"
+    amen
+
+    praise "Seconds until Christmas"
+    praise christmas - vigil
+    praise christmas
 amen

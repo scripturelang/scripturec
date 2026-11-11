@@ -44,6 +44,7 @@ pub enum Token<'input> {
     // `not equality` remains Not + Identifier("equality").
     LetThereBe,
     MakeItSoThat,
+    TimeOfOurLord,
     #[token("veritas", |_| true)]
     #[token("vero", |_| true)]
     #[token("verdadero", |_| true)]
@@ -109,6 +110,7 @@ impl fmt::Display for Token<'_> {
             Self::Separator => f.write_str("newline or ';'"),
             Self::ScriptureVersion => f.write_str("_scripture_version_"),
             Self::ScriptureCredits => f.write_str("_scripture_credits_"),
+            Self::TimeOfOurLord => f.write_str("time of our lord"),
             other => write!(f, "{other:?}"),
         }
     }
@@ -161,6 +163,7 @@ impl<'input> Lexer<'input> {
         let (suffix, compound) = match token {
             Token::Identifier("let") => (" there be", Token::LetThereBe),
             Token::Identifier("make") => (" it so that", Token::MakeItSoThat),
+            Token::Identifier("time") => (" of our lord", Token::TimeOfOurLord),
             Token::Not if self.inner.slice() == "not" => (" equal", Token::NotEqual),
             _ => return token,
         };

@@ -24,6 +24,7 @@ pub enum Value {
     Number(f64),
     String(Rc<str>),
     Boolean(bool),
+    Time(crate::moment::Moment),
 }
 
 impl Value {
@@ -50,6 +51,7 @@ impl fmt::Display for Value {
             Self::Number(n) => write!(f, "{n}"),
             Self::String(s) => f.write_str(s),
             Self::Boolean(b) => write!(f, "{b}"),
+            Self::Time(time) => write!(f, "{time}"),
         }
     }
 }
@@ -549,6 +551,28 @@ impl Interpreter {
             }
             ExprKind::String(text) => Ok(Value::String(Rc::from(text.as_str()))),
             ExprKind::Boolean(value) => Ok(Value::Boolean(*value)),
+            ExprKind::Time(arguments) => {
+                let result = match arguments.as_slice() {
+                    [] => crate::moment::Moment::now(),
+                    [argument] => {
+                        let Value::String(text) = self.eval(argument).await? else {
+                            return Err(self.error(&argument.span,
+                                "time of our lord expects a timestamp string; implicit type conversions are not allowed"));
+                        };
+                        return crate::moment::Moment::parse(&text)
+                            .map(Value::Time)
+                            .map_err(|message| self.error(&argument.span, message));
+                    }
+                    _ => {
+                        return Err(
+                            self.error(&expr.span, "time of our lord expects 0 or 1 arguments")
+                        );
+                    }
+                };
+                result
+                    .map(Value::Time)
+                    .map_err(|message| self.error(&expr.span, message))
+            }
             ExprKind::Identifier(name) => self
                 .lookup(name)
                 .map(|binding| binding.value.clone())
@@ -587,6 +611,19 @@ impl Interpreter {
                     Equal => Ok(Value::Boolean(lhs == rhs)),
                     NotEqual => Ok(Value::Boolean(lhs != rhs)),
                     And | Or => Ok(Value::Boolean(self.boolean(rhs, &right.span)?)),
+                    Subtract | Less | Greater
+                        if matches!((&lhs, &rhs), (Value::Time(_), Value::Time(_))) =>
+                    {
+                        let (Value::Time(lhs), Value::Time(rhs)) = (lhs, rhs) else {
+                            unreachable!()
+                        };
+                        match operator {
+                            Subtract => self.finite(lhs.seconds_since(rhs), &expr.span),
+                            Less => Ok(Value::Boolean(lhs < rhs)),
+                            Greater => Ok(Value::Boolean(lhs > rhs)),
+                            _ => unreachable!(),
+                        }
+                    }
                     _ => {
                         let lhs = self.number(lhs, &left.span)?;
                         let rhs = self.number(rhs, &right.span)?;
@@ -710,6 +747,7 @@ impl Interpreter {
                 self.dependencies(right, names)?;
             }
             ExprKind::Call { .. } => return Err(self.error(&expr.span, "prophecy conditions must be side-effect-free; function calls are not supported here")),
+            ExprKind::Time(_) => return Err(self.error(&expr.span, "time constructors are not supported in prophecy conditions; assign the time to a global variable first")),
             _ => {}
         }
         Ok(())

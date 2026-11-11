@@ -4,6 +4,7 @@ pub mod ast;
 pub mod diagnostic;
 pub mod interpreter;
 pub mod lexer;
+pub mod moment;
 mod sleep;
 
 /// Semantic version of the interpreter, shared by native and Wasm builds.

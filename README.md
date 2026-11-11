@@ -116,6 +116,28 @@ value types are errors. Durations use seconds only (no shell unit suffixes).
 The playground's ten-second run timeout includes time spent sleeping, and output
 remains buffered until execution finishes.
 
+## Times
+
+Use `time of our lord()` to capture the current moment, or supply a timestamp
+string with an explicit timezone. Times print in UTC, compare by instant, and
+subtract to give elapsed seconds:
+
+```text
+genesis:
+    let there be now = time of our lord()
+    praise now
+
+    let there be vigil = time of our lord("2026-12-24T23:00:00Z")
+    let there be christmas = time of our lord("2026-12-25T00:00:00Z")
+    praise vigil < christmas
+    praise christmas - vigil
+amen
+```
+
+The last two lines print `true` and `3600`. Invalid dates and timestamps without
+a timezone are errors. See [example11.scripture](./examples/example11.scripture)
+and the [time semantics](./SEMANTICS.md#times) for precision and supported operations.
+
 ## Interpreter metadata
 
 Two reserved expressions expose interpreter information as strings:
@@ -149,18 +171,20 @@ It uses a compatible CLI from `PATH` or installs one locally under `target/tools
 Once dependencies and tools are cached, use `cargo web --offline`.
 
 Generated files under `pkg/` and `target/` are ignored by Git. Building the runtime
-does not change or deploy the website. When a runtime is ready, copy the complete
-bundle into the website checkout (assuming the repositories are siblings):
+does not change or deploy the website. When a runtime is ready, install it from
+the website checkout (assuming the repositories are siblings):
 
 ```sh
-mkdir -p ../www/web/pkg
-cp -R pkg/. ../www/web/pkg/
+cd ../www
+make update
 ```
 
-Review and commit `www/web/pkg/` with the website changes. The JavaScript loader
-and Wasm binary must be updated together. The website uses this checked-in copy
-and needs no Rust toolchain to build or deploy. See its README for local serving
-and hosting instructions.
+`make update` validates the complete bundle, stores it under `web/pkg/<hash>/`,
+and selects it through a manifest. Unchanged bundles reuse the same hash; older
+bundles remain available to existing sessions. Review and commit the new bundle
+and manifest with the website changes. The website uses this checked-in copy and
+needs no Rust toolchain to build or deploy. See its README for local serving and
+hosting instructions.
 
 The bindings are also reusable from other static pages:
 
@@ -179,7 +203,7 @@ playground runs it inside a module worker to keep the page responsive.
 
 ## Language status
 
-Implemented: finite `f64` numbers, strings, booleans, strict type checks,
+Implemented: finite `f64` numbers, strings, booleans, UTC times, strict type checks,
 arithmetic and comparisons, short-circuit logic, mutable variables, constants,
 lexical local scopes, functions and recursion, returns, conditionals, printing,
 assignment chains, sleeping with `pray`, and reactive `prophecy` handlers.

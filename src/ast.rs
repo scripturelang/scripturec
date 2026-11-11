@@ -69,6 +69,7 @@ pub enum ExprKind {
     Number(String),
     String(String),
     Boolean(bool),
+    Time(Vec<Expr>),
     Identifier(String),
     Call {
         name: String,
@@ -129,7 +130,7 @@ impl Expr {
                     pending.push((left, depth + 1));
                     pending.push((right, depth + 1));
                 }
-                ExprKind::Call { arguments, .. } => {
+                ExprKind::Call { arguments, .. } | ExprKind::Time(arguments) => {
                     pending.extend(arguments.iter().map(|arg| (arg, depth + 1)))
                 }
                 _ => {}

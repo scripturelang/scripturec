@@ -6,9 +6,9 @@ Tokens are defined in [src/lexer.rs](./src/lexer.rs) and syntax in
 
 ## Values and operations
 
-Scripture is dynamically typed, with three value types: numbers, strings, and
-booleans. A mutable variable can hold a value of a different type after an
-assignment; its declaration does not fix its type.
+Scripture is dynamically typed, with four value types: numbers, strings,
+booleans, and times. A mutable variable can hold a value of a different type after
+an assignment; its declaration does not fix its type.
 
 Numbers use a single representation: finite IEEE 754 binary64 floating-point
 values (`f64` in Rust). There is no separate integer type. For example, `5 / 2`
@@ -19,20 +19,49 @@ There are no implicit conversions between types. Conditions must evaluate to
 booleans; logical conjunction, disjunction, and negation accept booleans and
 produce booleans. For example, `if 1:` is a runtime type error.
 
-Arithmetic operators (`+`, `-`, `*`, `/`) accept numbers only. Unary plus
-preserves a numeric value and unary minus negates it. The `+` operator does not
+Arithmetic operators (`+`, `-`, `*`, `/`) accept numbers; subtraction also accepts
+two times and returns elapsed seconds. Unary plus preserves a numeric value and
+unary minus negates it. The `+` operator does not
 concatenate strings: both `"5" + 2` and `"a" + "b"` are runtime type errors.
 
-Equality compares numbers numerically, strings by their exact contents, and
-booleans by their truth values. Values of different types are unequal, so
-`1 == "1"` and `1 == true` are false. Inequality is the logical inverse of
-equality. Ordering (`<`, `>`) accepts numbers only; other operand types produce
-a runtime type error. All comparisons produce booleans.
+Equality compares numbers numerically, strings by their exact contents, booleans
+by their truth values, and times by their instants. Values of different types are
+unequal, so `1 == "1"` and `1 == true` are false. Inequality is the logical inverse
+of equality. Ordering (`<`, `>`) accepts two numbers or two times; other operand
+types produce a runtime type error. All comparisons produce booleans.
 
 Division by zero and arithmetic results that are not finite are runtime errors.
 NaN and positive or negative infinity are not language values. Numeric literals
 outside the finite binary64 range are errors as well. The parser preserves numeric
 spellings; the interpreter validates and converts them when evaluating literals.
+
+## Times
+
+`time of our lord()` captures the current wall-clock instant. With one argument,
+`time of our lord("2026-12-25T00:00:00Z")` parses a timestamp string. The argument
+may be any expression producing a string and is evaluated once. Other types and
+more than one argument are errors. Parentheses are required, and the compound
+keyword uses single spaces, like `let there be`; `time` alone remains an identifier.
+
+Input uses RFC 3339: a full date and time with an explicit `Z` or numeric timezone
+offset (for example, `2026-12-24T18:00:00-06:00`). Invalid calendar dates, missing
+offsets, leap seconds, and more than nine fractional second digits are errors.
+The normalized UTC year must be between 0000 and 9999 inclusive. Times retain
+nanosecond precision and print in UTC with `Z`, omitting unnecessary fractional
+zeros. Equivalent instants compare equal regardless of their input offsets.
+
+Subtracting two times returns signed elapsed seconds as a number; fractional
+seconds are supported. Conversion of large differences to `f64` may round. Other
+arithmetic on times, including adding a number, is unsupported. Times are distinct
+from their printed strings and cannot be used as booleans or numbers implicitly.
+
+Native execution reads the operating system clock; browser execution reads
+`Date.now()` with millisecond precision (which the browser may further reduce).
+These are wall clocks and may be adjusted; successive captures are not guaranteed
+to increase. A stored time is a snapshot and does not advance automatically.
+Prophecies can compare global time variables, but constructors are disallowed
+inside their conditions. Assign a new value to a watched global to trigger a check;
+the passage of time alone does not trigger a prophecy.
 
 ## Interpreter metadata
 
@@ -104,7 +133,7 @@ pauses for a quarter second; `pray (delay * 2)` uses a computed duration. Like
 
 The operand must be a finite, non-negative number representable as a Rust
 `Duration` (less than 2^64 seconds, rounded to nanoseconds). Zero is a no-op.
-Strings, booleans, negative durations, and out-of-range durations produce a
+Strings, booleans, times, negative durations, and out-of-range durations produce a
 runtime error at the operand. Unit suffixes and multiple duration arguments are
 not supported; use arithmetic to express minutes or hours.
 
@@ -130,9 +159,10 @@ remains an error in the REPL. Each browser Run starts a fresh environment.
 ## Output and errors
 
 `praise` appends one output line. Strings print their contents, booleans print
-`true` or `false`, and numbers use their floating-point display representation
-(with both zero signs printed as `0`). Bare string expressions in the REPL display
-with quotes to distinguish their value from printed text.
+`true` or `false`, times print as UTC timestamps, and numbers use their
+floating-point display representation (with both zero signs printed as `0`). Bare
+string expressions in the REPL display with quotes to distinguish their value
+from printed text.
 
 `confess` evaluates its operand and reports an uncaught `sin` containing the value's
 printed representation. Syntax or runtime errors stop the current file or REPL

@@ -116,7 +116,7 @@ fn run() -> Result<()> {
             .arg(&package),
     )?;
     fs::write(package.join("package.json"), "{\"type\":\"module\"}\n")?;
-    println!("Built pkg/. Copy this directory into the website repository when ready.");
+    println!("Built pkg/. Run make update in the website repository when ready.");
     Ok(())
 }
 

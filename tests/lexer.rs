@@ -26,6 +26,7 @@ fn compound_keywords_include_the_whole_phrase_in_their_span() {
         ("let there be", Token::LetThereBe),
         ("make it so that", Token::MakeItSoThat),
         ("not equal", Token::NotEqual),
+        ("time of our lord", Token::TimeOfOurLord),
     ] {
         let source = format!("  {phrase}(x)");
         let mut lexer = Lexer::new(&source);
