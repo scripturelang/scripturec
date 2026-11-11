@@ -174,6 +174,37 @@ fn now_captures_the_host_clock() {
 }
 
 #[test]
+fn christmas_example_handles_before_at_and_after_the_deadline() {
+    let source = include_str!("../examples/example11.scripture");
+    assert!(source.contains("let there be now = time of our lord()"));
+    for (stamp, expected) in [
+        (
+            "2026-12-24T23:00:00Z",
+            vec![
+                "The hour has not yet come",
+                "Seconds until Christmas",
+                "3600",
+                "2026-12-25T00:00:00Z",
+            ],
+        ),
+        (
+            "2026-12-25T00:00:00Z",
+            vec!["Christmas has already passed", "2026-12-25T00:00:00Z"],
+        ),
+        (
+            "2026-12-26T00:00:00Z",
+            vec!["Christmas has already passed", "2026-12-25T00:00:00Z"],
+        ),
+    ] {
+        let fixed_clock = source.replace(
+            "time of our lord()",
+            &format!("time of our lord(\"{stamp}\")"),
+        );
+        assert_eq!(output(&fixed_clock), expected);
+    }
+}
+
+#[test]
 fn prophecies_watch_stored_times_but_do_not_read_the_clock() {
     assert_eq!(
         output(

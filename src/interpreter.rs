@@ -463,10 +463,19 @@ impl Interpreter {
                 let value = self.eval(expr).await?;
                 return Err(self.error(&statement.span, format!("uncaught sin: {value}")));
             }
-            StatementKind::Conditional { condition, body } => {
+            StatementKind::Conditional {
+                condition,
+                body,
+                otherwise,
+            } => {
                 let value = self.eval(condition).await?;
-                if self.boolean(value, &condition.span)? {
-                    return self.block(body, true).await;
+                let selected = if self.boolean(value, &condition.span)? {
+                    Some(body)
+                } else {
+                    otherwise.as_ref()
+                };
+                if let Some(selected) = selected {
+                    return self.block(selected, true).await;
                 }
             }
             StatementKind::Assignment { targets, value } => {

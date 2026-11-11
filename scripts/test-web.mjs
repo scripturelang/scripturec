@@ -11,11 +11,25 @@ initSync({ module: readFileSync(new URL('../pkg/scripturec_bg.wasm', import.meta
 let count = 0;
 for (const name of readdirSync(`${root}examples`).filter(name => name.endsWith('.scripture'))) {
   const path = `${root}examples/${name}`;
-  const browser = JSON.parse(await run_script(readFileSync(path, 'utf8')));
-  const native = spawnSync(binary, [path], { encoding: 'utf8' });
-  assert.equal(browser.error, null, `${name}: ${browser.error}`);
-  assert.equal(native.status, 0, `${name}: ${native.stderr}`);
-  assert.equal(browser.output.length ? browser.output.join('\n') + '\n' : '', native.stdout, name);
+  const source = readFileSync(path, 'utf8');
+  // Compare the live-clock example at fixed instants on both runtimes.
+  const instants = name === 'example11.scripture'
+    ? ['2026-12-24T23:00:00Z', '2026-12-25T00:00:00Z', '2026-12-26T00:00:00Z']
+    : [null];
+  for (const instant of instants) {
+    const originalClock = Date.now;
+    try {
+      if (instant) Date.now = () => Date.parse(instant);
+      const browser = JSON.parse(await run_script(source));
+      const nativeSource = instant ? source.replace('time of our lord()', `time of our lord("${instant}")`) : source;
+      const native = spawnSync(binary, ['-'], { input: nativeSource, encoding: 'utf8' });
+      assert.equal(browser.error, null, `${name}: ${browser.error}`);
+      assert.equal(native.status, 0, `${name}: ${native.stderr}`);
+      assert.equal(browser.output.length ? browser.output.join('\n') + '\n' : '', native.stdout, name);
+    } finally {
+      Date.now = originalClock;
+    }
+  }
   count++;
 }
 for (const [source, message] of [

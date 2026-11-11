@@ -124,6 +124,13 @@ conditionals. Functions that finish without executing `rejoice` return `false`.
 `rejoice` outside a function is an error. Assignments and conditionals are
 statements and do not produce expression values.
 
+`if condition: ... else: ... amen` selects one of two branches. The `else:`
+branch is optional, and one `amen` closes the entire conditional. The condition
+is evaluated once and must be a boolean. Only the selected branch executes, in
+its own local scope; returns and errors propagate normally. Nested conditionals
+each require their own `amen`. `else` is reserved, and an `else:` branch does not
+add another level to the block nesting limit.
+
 ## Sleeping
 
 `pray expression` evaluates its operand once and pauses execution for that many

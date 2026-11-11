@@ -65,7 +65,9 @@ NonBindingStatement: ast::StatementKind = {
     <targets:(<Identifier> "=")+> <value:Expression> => S::Assignment { targets, value },
     "rejoice" <Expression> => S::Return(<>),
     "confess" <Expression> => S::Throw(<>),
-    "if" <condition:Expression> <body:Block> => S::Conditional { condition, body },
+    "if" <condition:Expression> ":" <body:Sequence<Statement>>
+        <otherwise:("else" ":" <Sequence<Statement>>)?> "amen"
+        => S::Conditional { condition, body, otherwise },
     "preach" <Call> => S::Preach(<>),
     "pray" <Expression> => S::Pray(<>),
     "praise" <Expression> => S::Praise(<>),
@@ -184,6 +186,7 @@ extern {
         "confess" => Token::Confess,
         "absolve" => Token::Absolve,
         "if" => Token::If,
+        "else" => Token::Else,
         "_scripture_version_" => Token::ScriptureVersion,
         "_scripture_credits_" => Token::ScriptureCredits,
         "let there be" => Token::LetThereBe,

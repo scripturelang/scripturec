@@ -58,6 +58,33 @@ fn syntax_depth_is_bounded_before_evaluation_cloning_and_drop() {
 }
 
 #[test]
+fn else_branches_obey_the_same_block_depth_limit() {
+    for branch in ["if true: ", "if false: else: "] {
+        let allowed = format!(
+            "genesis: {}praise 1 {}amen",
+            branch.repeat(31),
+            "amen ".repeat(31)
+        );
+        assert_eq!(run(&allowed).output, ["1"]);
+        let too_deep = format!(
+            "genesis: {}praise 1 {}amen",
+            branch.repeat(32),
+            "amen ".repeat(32)
+        );
+        expect_error(&too_deep, "block nesting limit");
+    }
+    // An else is a sibling branch, not another nested block.
+    let siblings = format!(
+        "genesis: {}praise 1 {}amen",
+        "if true: ".repeat(31),
+        "else: praise 2 amen ".repeat(31)
+    );
+    let result = run(&siblings);
+    assert!(result.error.is_none(), "{result:?}");
+    assert_eq!(result.output, ["1"]);
+}
+
+#[test]
 fn combined_runtime_nesting_unwinds_and_preserves_the_session() {
     let mut session = Interpreter::new();
     let definition = format!(

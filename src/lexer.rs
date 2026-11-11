@@ -35,6 +35,8 @@ pub enum Token<'input> {
     Absolve,
     #[token("if")]
     If,
+    #[token("else")]
+    Else,
     #[token("_scripture_version_")]
     ScriptureVersion,
     #[token("_scripture_credits_")]

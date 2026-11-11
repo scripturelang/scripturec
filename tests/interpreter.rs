@@ -188,6 +188,60 @@ fn scopes_are_lexical_and_local_declarations_can_shadow_globals() {
 }
 
 #[test]
+fn else_selects_one_branch_and_preserves_scopes_and_returns() {
+    assert_eq!(
+        output(
+            r#"
+        let there be calls = 0
+        let there be value = 10
+        commandment condition(): calls = calls + 1; rejoice false amen
+        commandment choose(flag):
+            if flag:
+                rejoice 1
+            else:
+                if true: rejoice 2 else: confess "wrong inner branch" amen
+            amen
+            confess "return was lost"
+        amen
+        genesis:
+            if condition():
+                confess "wrong branch"
+            else:
+                let there be value = 20
+                praise value
+            amen
+            praise calls
+            praise value
+            praise choose(true)
+            praise choose(false)
+            if true: praise "yes" else: confess "unreachable" amen
+            if false: praise "no" amen
+        amen
+    "#
+        ),
+        ["20", "1", "10", "1", "2", "yes"]
+    );
+    fails(
+        "genesis: if false: else: let there be hidden = 1 amen; praise hidden amen",
+        "undefined name",
+    );
+    fails(
+        "genesis: if 1: else: praise 2 amen amen",
+        "expected a boolean",
+    );
+    let mut session = Interpreter::new();
+    assert!(
+        session
+            .execute_repl("if false: else: let there be hidden = 1; confess hidden amen")
+            .error
+            .is_some()
+    );
+    let recovered = session.execute_repl("let there be hidden = 2; hidden");
+    assert!(recovered.error.is_none(), "{recovered:?}");
+    assert_eq!(recovered.output, ["2"]);
+}
+
+#[test]
 fn multiple_bindings_and_assignment_chains_evaluate_the_value_once() {
     assert_eq!(
         output(

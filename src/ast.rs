@@ -57,6 +57,7 @@ pub enum StatementKind {
     Conditional {
         condition: Expr,
         body: Block,
+        otherwise: Option<Block>,
     },
     Preach(Expr),
     Pray(Expr),

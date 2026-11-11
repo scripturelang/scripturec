@@ -443,6 +443,39 @@ fn time_constructors_are_expressions_with_required_parentheses() {
 }
 
 #[test]
+fn else_branches_share_one_amen_with_their_if() {
+    let items = parse_repl("if true:\n praise 1\nelse:\n praise 2\namen").unwrap();
+    let ReplItem::Statement(statement) = &items[0] else {
+        panic!()
+    };
+    let S::Conditional {
+        body, otherwise, ..
+    } = &statement.value
+    else {
+        panic!()
+    };
+    assert_eq!(body.len(), 1);
+    assert_eq!(otherwise.as_ref().unwrap().len(), 1);
+    parse_repl("if true: else: amen").unwrap();
+    parse_repl("if true: if false: else: amen else: if true: else: amen amen").unwrap();
+    parse_repl("let there be elsewhere = 1").unwrap();
+    assert!(matches!(
+        parse_repl("if false: else: praise 1"),
+        Err(ParseError::UnrecognizedEof { .. })
+    ));
+    for source in [
+        "else: amen",
+        "if true: amen else: amen",
+        "if true: else praise 1 amen",
+        "if true: else: else: amen",
+        "genesis: else: amen",
+        "let there be else = 1",
+    ] {
+        assert!(parse_repl(source).is_err(), "accepted {source:?}");
+    }
+}
+
+#[test]
 fn lexer_tracks_nested_parentheses_without_swallowing_semicolons() {
     let tokens: Vec<_> = Lexer::new("(\n(1\n)\n;2\n)\n3")
         .map(|token| token.unwrap().1)

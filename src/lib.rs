@@ -50,13 +50,16 @@ fn check_input(source: &str) -> Result<(), ParseError<'_>> {
         None => {
             // Reject deep blocks before the parser can build recursively owned ASTs.
             let mut depth = 0usize;
+            let mut after_else = false;
             for token in lexer::Lexer::new(source) {
                 let (start, token, end) = token.map_err(|error| ParseError::User { error })?;
                 match token {
-                    lexer::Token::Colon => depth += 1,
+                    // `else:` starts the alternate branch at the same depth.
+                    lexer::Token::Colon if !after_else => depth += 1,
                     lexer::Token::Amen => depth = depth.saturating_sub(1),
                     _ => {}
                 }
+                after_else = matches!(token, lexer::Token::Else);
                 if depth > 32 {
                     return Err(ParseError::User {
                         error: lexer::LexError {

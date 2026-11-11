@@ -1,12 +1,12 @@
 genesis:
-    let there be vigil = time of our lord("2026-12-24T23:00:00Z")
+    let there be now = time of our lord()
     let there be christmas = time of our lord("2026-12-25T00:00:00Z")
 
-    if vigil < christmas:
-        praise "The hour has not yet come"
+    if now < christmas:
+        praise "The hour has not yet come - seconds until Christmas:"
+        praise christmas - now
+    else:
+        praise "Merry Christmas!"
     amen
 
-    praise "Seconds until Christmas"
-    praise christmas - vigil
-    praise christmas
 amen

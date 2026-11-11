@@ -125,17 +125,24 @@ subtract to give elapsed seconds:
 ```text
 genesis:
     let there be now = time of our lord()
-    praise now
-
-    let there be vigil = time of our lord("2026-12-24T23:00:00Z")
     let there be christmas = time of our lord("2026-12-25T00:00:00Z")
-    praise vigil < christmas
-    praise christmas - vigil
+
+    if now < christmas:
+        praise "The hour has not yet come"
+        praise "Seconds until Christmas"
+        praise christmas - now
+    else:
+        praise "Christmas has already passed"
+    amen
+
+    praise christmas
 amen
 ```
 
-The last two lines print `true` and `3600`. Invalid dates and timestamps without
-a timezone are errors. See [example11.scripture](./examples/example11.scripture)
+The countdown uses the current time on each run; at or after the Christmas
+timestamp, the `else` branch runs instead. One `amen` closes the entire conditional.
+Invalid dates and timestamps without a timezone are errors.
+See [example11.scripture](./examples/example11.scripture)
 and the [time semantics](./SEMANTICS.md#times) for precision and supported operations.
 
 ## Interpreter metadata
