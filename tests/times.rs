@@ -174,33 +174,33 @@ fn now_captures_the_host_clock() {
 }
 
 #[test]
-fn christmas_example_handles_before_at_and_after_the_deadline() {
-    let source = include_str!("../examples/example11.scripture");
-    assert!(source.contains("let there be now = time of our lord()"));
+fn time_conditionals_handle_before_at_and_after_the_deadline() {
+    // Assert runtime behavior without coupling it to the example's editable prose.
+    let source = r#"genesis:
+        let there be now = time of our lord()
+        let there be deadline = time of our lord("2026-12-25T00:00:00Z")
+        praise now < deadline
+        if now < deadline:
+            praise deadline - now
+        else:
+            praise now - deadline
+        amen
+    amen"#;
     for (stamp, expected) in [
-        (
-            "2026-12-24T23:00:00Z",
-            vec![
-                "The hour has not yet come",
-                "Seconds until Christmas",
-                "3600",
-                "2026-12-25T00:00:00Z",
-            ],
-        ),
-        (
-            "2026-12-25T00:00:00Z",
-            vec!["Christmas has already passed", "2026-12-25T00:00:00Z"],
-        ),
-        (
-            "2026-12-26T00:00:00Z",
-            vec!["Christmas has already passed", "2026-12-25T00:00:00Z"],
-        ),
+        ("2026-12-24T23:00:00Z", ["true", "3600"]),
+        ("2026-12-25T00:00:00Z", ["false", "0"]),
+        ("2026-12-26T00:00:00Z", ["false", "86400"]),
     ] {
         let fixed_clock = source.replace(
             "time of our lord()",
             &format!("time of our lord(\"{stamp}\")"),
         );
         assert_eq!(output(&fixed_clock), expected);
+        let example = include_str!("../examples/example11.scripture").replace(
+            "time of our lord()",
+            &format!("time of our lord(\"{stamp}\")"),
+        );
+        output(&example);
     }
 }
 
